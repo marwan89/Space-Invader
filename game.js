@@ -19,10 +19,17 @@ var KEY_DOWN=40;
 
 var pressing=[];
 
-var player=new Rectangle(100,290,10,10,3);
+var player=new Rectangle(100,290,10,10,0,3);
 
 var shots=[];
 var enemies=[];
+///////////////////////////////////
+
+var powerups=[];
+
+var multishot=1;
+
+var messages=[];
 
 
 
@@ -36,10 +43,12 @@ function reset(){
         player.y=290;
         shots.length=0;
         enemies.length=0;
-        enemies.push(new Rectangle(10,0,10,10,2));
+        enemies.push(new Rectangle(10,0,10,10,0,2));
         gameover=false;
         player.timer=0;
         player.health=3;
+        multishot=1;
+        messages.length=0;
 }
 
 function init(){
@@ -81,7 +90,17 @@ function act(){
 
         //Disparos
         if(lastPress==KEY_SPACE){
-            shots.push(new Rectangle(player.x+3,player.y,5,5));
+            if(multishot==3){
+                shots.push(new Rectangle(player.x-3,player.y+2,5,5));
+                shots.push(new Rectangle(player.x+3,player.y,5,5));
+                shots.push(new Rectangle(player.x+9,player.y+2,5,5));
+            }else if(multishot==2){
+                shots.push(new Rectangle(player.x,player.y,5,5));
+                shots.push(new Rectangle(player.x+5,player.y,5,5));
+            }else{
+                 shots.push(new Rectangle(player.x+3,player.y,5,5));    
+            }
+           
             lastPress=null;
         }  
 
@@ -90,6 +109,40 @@ function act(){
             shots[i].y-=10;
             if(shots[i].y<0){
                 shots.splice(i--,1);
+                l--;
+            }
+        }
+
+        //Muevo los mensajes
+        for(var i=0,l=messages.length;i<l;i++){
+            messages[i].y-=2;
+            if(messages[i].y<260){
+                    messages.splice(i--,1);
+                    l--;
+                }
+        }
+        //Muevo las mejoras
+        for(var i=0,l=powerups.length;i<l;i++){
+            powerups[i].y+=10;
+            if(powerups[i].y>canvas.height){
+                powerups.splice(i--,1);
+                l--;
+                continue;
+            }
+            if(player.intersects(powerups[i])){
+                if(powerups[i].type==1){//Si es de tipo multidisparo
+                    if(multishot<3){//Como maximo que tenga +3 de tiro si consigue mas le damos mas puntos
+                        multishot++;
+                        messages.push(new Message('MULTI',player.x,player.y));
+                    }else{
+                        score+=5;
+                        messages.push(new Message('+5',player.x,player.y));
+                    }
+                }else{
+                    score+=5;
+                        messages.push(new Message('+5',player.x,player.y));
+                }
+                powerups.splice(i--,1);
                 l--;
             }
         }
@@ -107,7 +160,7 @@ function act(){
                         enemies[i].x=random(canvas.width/10)*10;
                         enemies[i].y=0;
                         enemies[i].health=2;
-                        enemies.push(new Rectangle(random(canvas.width/10)*10,0,10,10));//Genero otra nave enemiga                    
+                        enemies.push(new Rectangle(random(canvas.width/10)*10,0,10,10,0,2));//Genero otra nave enemiga                    
                     }else{
                         enemies[i].timer=1;//Xa mostrar el efecto de dañado
                     }
@@ -136,11 +189,20 @@ function act(){
                 if(shots[j].intersects(enemies[i])){
                     score++;
                     enemies[i].health--;
-                    if(enemies[i].health<1){
+                    if(enemies[i].health<1){//Al matar un enemigo
+                        var r=random(20);//4/20 mejora de puntos y 1/20 multidisparos
+                        if(r<5){
+                            if(r==0){
+                                powerups.push(new Rectangle(enemies[i].x,enemies[i].y,10,10,1));//Tipo 1 xa multidisparo
+                            }
+                            else{
+                                powerups.push(new Rectangle(enemies[i].x,enemies[i].y,10,10,0));
+                            }
+                        }
                         enemies[i].x=random(canvas.width/10)*10;
                         enemies[i].y=0;
                         enemies[i].health=2;
-                        enemies.push(new Rectangle(random(canvas.width/10)*10,0,10,10));//Genero otra nave enemiga                    
+                        enemies.push(new Rectangle(random(canvas.width/10)*10,0,10,10,0,2));//Genero otra nave enemiga                    
                     }else{
                         enemies[i].timer=1;//Xa mostrar el efecto de dañado
                     }
@@ -172,6 +234,11 @@ function paint(ctx){
     if(player.timer%2==0){
         player.fill(ctx); //Activo y desactivo el coolor   
     }        
+    //Pinto los mensajes
+    ctx.fillStyle='#fff';
+    for(var i=0;i<messages.length;i++){
+        ctx.fillText(messages[i].string,messages[i].x,messages[i].y);
+    }
     //Pinto los disparos
     ctx.fillStyle='#f00';
     for(var l=0;l<shots.length;l++){
@@ -185,6 +252,15 @@ function paint(ctx){
             ctx.fillStyle='#fff';
         }
         enemies[i].fill(ctx);
+    }
+    //Pinto las mejoras
+    for(var i=0;i<powerups.length;i++){
+        if(powerups[i].type==0){//multidisparo de naranja
+            ctx.fillStyle='#cc6';
+        }else{
+            ctx.fillStyle='#f90';
+        }
+        powerups[i].fill(ctx);
     }
     //Pinto la puntuación
     ctx.fillStyle='#fff';
@@ -212,11 +288,18 @@ document.addEventListener('keyup',function(evt){
     pressing[evt.keyCode]=false;
 },false);
 
-function Rectangle(x,y,width,height,health){
+function Message(string,x,y){
+    this.string=(string==null)?'?':string;
+    this.x=(x==null)?0:x;
+    this.y=(y==null)?0:y;
+}
+
+function Rectangle(x,y,width,height,type,health){
         this.x=(x==null)?0:x;
         this.y=(y==null)?0:y;
         this.width=(width==null)?0:width;
         this.height=(height==null)?this.width:height;
+        this.type=(type==null)?1:type;
         this.health=(health==null)?1:health;
         this.timer=0;
     }
