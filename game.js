@@ -31,7 +31,10 @@ var multishot=1;
 
 var messages=[];
 
+var spritesheet=new Image();
+spritesheet.src='assets/spritesheet.png'
 
+var aTimer=0;
 
 function random(max){
     return ~~(Math.random()*max);
@@ -44,11 +47,15 @@ function reset(){
         shots.length=0;
         enemies.length=0;
         enemies.push(new Rectangle(10,0,10,10,0,2));
+        enemies.push(new Rectangle(40,0,10,10,0,2));
+        enemies.push(new Rectangle(70,0,10,10,0,2));
+        enemies.push(new Rectangle(100,0,10,10,0,2));
         gameover=false;
         player.timer=0;
         player.health=3;
         multishot=1;
         messages.length=0;
+        aTimer=0;
 }
 
 function init(){
@@ -72,6 +79,11 @@ function act(){
     if(!pause){
        if(gameover){
         reset();
+       }
+       //TIMER
+       aTimer++;
+       if(aTimer>360){
+        aTimer-=360;
        }
         //if(pressing[KEY_UP])
           //  y-=10;
@@ -169,7 +181,7 @@ function act(){
                 }
 
             }//Fin del for de los shots
-            enemies[i].y+=10;//La velocidad a la que bajan las naves
+            enemies[i].y+=5;//La velocidad a la que bajan las naves
             if(enemies[i].y>canvas.height){//Si llega hasta abajo lo vuelvo a colocar arriba(no lo elimino del array)
                 enemies[i].x=random(canvas.width/10)*10;
                 enemies[i].y=0;
@@ -230,10 +242,8 @@ function paint(ctx){
     ctx.fillStyle='#000';
     ctx.fillRect(0,0,canvas.width,canvas.height);
     //Pinto mi personaje
-    ctx.fillStyle='#0f0';
-    if(player.timer%2==0){
-        player.fill(ctx); //Activo y desactivo el coolor   
-    }        
+    player.drawImageArea(ctx,spritesheet,0+(aTimer%3)*10,0,10,10);
+        
     //Pinto los mensajes
     ctx.fillStyle='#fff';
     for(var i=0;i<messages.length;i++){
@@ -242,25 +252,26 @@ function paint(ctx){
     //Pinto los disparos
     ctx.fillStyle='#f00';
     for(var l=0;l<shots.length;l++){
-        shots[l].fill(ctx);
+        shots[l].drawImageArea(ctx,spritesheet,70,0+(aTimer%2)*5,5,5);
     }
     //Pinto los enemigos
     for(var i=0;i<enemies.length;i++){
-        if(enemies[i].timer%2==0)
-            ctx.fillStyle='#00f';//lo pinto de azul
-        else{
-            ctx.fillStyle='#fff';
+        if(enemies[i].timer%2==0){
+           // ctx.strokeStyle='#00f';//lo pinto de azul
+            enemies[i].drawImageArea(ctx,spritesheet,30,0,10,10);
         }
-        enemies[i].fill(ctx);
+        else{
+            //ctx.strokeStyle='#fff';
+            enemies[i].drawImageArea(ctx,spritesheet,40,0,10,10);
+        }
     }
     //Pinto las mejoras
     for(var i=0;i<powerups.length;i++){
         if(powerups[i].type==0){//multidisparo de naranja
-            ctx.fillStyle='#cc6';
+            powerups[i].drawImageArea(ctx,spritesheet,50,0,10,10);
         }else{
-            ctx.fillStyle='#f90';
+            powerups[i].drawImageArea(ctx,spritesheet,60,0,10,10);
         }
-        powerups[i].fill(ctx);
     }
     //Pinto la puntuación
     ctx.fillStyle='#fff';
@@ -315,6 +326,13 @@ function Rectangle(x,y,width,height,type,health){
     //Con prototype añadimos la funcion fill a la clase Rectangle
     Rectangle.prototype.fill=function(ctx){
         ctx.fillRect(this.x,this.y,this.width,this.height);
+    }
+
+    Rectangle.prototype.drawImageArea=function(ctx,img,sx,sy,sw,sh){
+        if(img.width)
+            ctx.drawImage(img,sx,sy,sw,sh,this.x,this.y,this.width,this.height);
+        else
+            ctx.strokeRect(this.x,this.y,this.width,this.height);
     }
 
 window.requestAnimationFrame=(function(){
