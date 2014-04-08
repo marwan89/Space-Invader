@@ -34,7 +34,15 @@ var messages=[];
 var spritesheet=new Image();
 spritesheet.src='assets/spritesheet.png'
 
-var aTimer=0;
+var aTimer=0;//Timer xa cambiar las imagenes de mi spritesheet dinámicamente
+
+var stars=[];
+//Fondo
+var background=new Image();
+background.src='assets/fondo.jpg';
+
+var bgTimer=0;
+
 
 function random(max){
     return ~~(Math.random()*max);
@@ -61,6 +69,10 @@ function reset(){
 function init(){
     canvas=document.getElementById('canvas');
     ctx=canvas.getContext('2d');
+    //Genero 100 estrellas al azar
+    for(var i=0;i<200;i++){
+        stars.push(new Star(random(canvas.width),random(canvas.height),random(100)));
+    }
     run();
     repaint();
 }
@@ -80,17 +92,21 @@ function act(){
        if(gameover){
         reset();
        }
-       //TIMER
+
+       //Xa controlar la imagen d fondo
+       bgTimer++;
+       if(bgTimer>0){
+        bgTimer-=background.height;
+       }
+       //TIMER xa cambiar las imagenes dinámicamente
        aTimer++;
        if(aTimer>360){
         aTimer-=360;
        }
-        //if(pressing[KEY_UP])
-          //  y-=10;
+        
         if(pressing[KEY_RIGHT])
             player.x+=10;
-        //if(pressing[KEY_DOWN])
-          //  y+=10;
+       
         if(pressing[KEY_LEFT])
             player.x-=10;
 
@@ -223,6 +239,18 @@ function act(){
                 }
             }    
         }//Fin del for de los enemigos
+
+     //Muevo las estrellas
+     for(var i=0;i<stars.length;i++){
+        stars[i].y++;
+        if(stars[i].y>canvas.height){
+            stars[i].y=0;
+        }
+        stars[i].timer+=10;
+        if(stars[i].timer>200){
+            stars[i].timer-=200;
+        }
+     }   
     if(player.health<1){
         gameover=true;
         pause=true;
@@ -239,8 +267,25 @@ function act(){
 }
 
 function paint(ctx){
+ 
+
     ctx.fillStyle='#000';
-    ctx.fillRect(0,0,canvas.width,canvas.height);
+    // ctx.fillRect(0,0,canvas.width,canvas.height);
+       //Pinto las estrellas lo primero de todo para que queden en el fondo
+    // ctx.fillStyle='#fff';
+    // for(var i=0;i<stars.length;i++){
+    //     var c=255-Math.abs(100-stars[i].timer);//La formula para hacer que una animación vaya hacia adelante y hacia atrás,
+    //     //consiste primero en restar a la mitad del valor máximo, el temporizador.
+    //     ctx.fillStyle='rgb('+c+','+c+','+c+')';
+    //     ctx.fillRect(stars[i].x,stars[i].y,1,1);
+    // }
+    //Pinto el fondo
+    if(background.width){
+        ctx.drawImage(background,0,bgTimer);
+        ctx.drawImage(background,0,background.height+bgTimer);
+    }
+       
+    
     //Pinto mi personaje
     player.drawImageArea(ctx,spritesheet,0+(aTimer%3)*10,0,10,10);
         
@@ -277,7 +322,7 @@ function paint(ctx){
     ctx.fillStyle='#fff';
     ctx.fillText('Score: '+score,0,20);
     //Pinto la vida
-    ctx.fillText('health'+player.health,100,20);
+    ctx.fillText('health'+player.health,160,20);
     //ctx.fillText('Last Press: '+lastPress,0,20);
     if(pause){
         ctx.textAlign='center';
@@ -287,6 +332,8 @@ function paint(ctx){
             ctx.fillText('PAUSE',100,75);
         ctx.textAlign='left';
     }
+
+    
 }
 
 //Mientras tengamos pulsado la tecla de dirección se moverá
@@ -304,6 +351,13 @@ function Message(string,x,y){
     this.x=(x==null)?0:x;
     this.y=(y==null)?0:y;
 }
+
+function Star(x,y,timer){
+    this.x=(x==null)?0:x;
+    this.y=(y==null)?0:y;
+    this.timer=(timer==null)?0:timer;
+}
+
 
 function Rectangle(x,y,width,height,type,health){
         this.x=(x==null)?0:x;
